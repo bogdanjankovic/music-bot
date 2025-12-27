@@ -7,6 +7,15 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+// Prevent the bot from crashing on unhandled errors
+process.on('unhandledRejection', error => {
+    console.error('Unhandled promise rejection:', error);
+});
+
+process.on('uncaughtException', error => {
+    console.error('Uncaught exception:', error);
+});
+
 // Auto-Leave Timer Map
 const autoLeaveTimers = new Map();
 
