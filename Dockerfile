@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsodium-dev \
     git \
-    && pip3 install yt-dlp --break-system-packages \
+    && pip3 install -U yt-dlp --break-system-packages \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Fix "python" command not found (symlink python3 -> python)

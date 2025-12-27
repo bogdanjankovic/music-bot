@@ -269,8 +269,7 @@ async function playSong(guild, song) {
             '-f', 'bestaudio',
             '--no-warnings',
             '--no-check-certificates',
-            '--prefer-free-formats',
-            '--youtube-skip-dash-manifest'
+            '--prefer-free-formats'
         ]);
 
         ytDlpProcess.on('error', err => {
