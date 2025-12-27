@@ -290,7 +290,17 @@ async function playSong(guild, song) {
         ]);
 
         // Pipe yt-dlp output directly into FFmpeg input
-        ytDlpProcess.stdout.pipe(ffmpegProcess.stdin);
+        ytDlpProcess.stdout.on('error', err => {
+            if (err.code === 'EPIPE') {
+                console.log('yt-dlp stdout EPIPE: FFmpeg likely closed the pipe early.');
+            } else {
+                console.error('yt-dlp stdout error:', err);
+            }
+        });
+
+        ytDlpProcess.stdout.pipe(ffmpegProcess.stdin).on('error', err => {
+            console.log('Pipe error:', err);
+        });
 
         // capture yt-dlp errors/logs for debugging
         ytDlpProcess.stderr.on('data', data => {
