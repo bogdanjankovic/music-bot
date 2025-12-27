@@ -29,11 +29,14 @@ module.exports = {
             return interaction.editReply({ content: 'No bot messages found to clean up.' });
         }
 
-        await interaction.channel.bulkDelete(messagesToDelete, true).catch(err => {
+        const deleted = await interaction.channel.bulkDelete(messagesToDelete, true).catch(err => {
             console.error(err);
             return interaction.editReply({ content: 'There was an error trying to prune messages in this channel!' });
         });
 
-        return interaction.editReply({ content: `Successfully deleted \`${messagesToDelete.length}\` bot messages.` });
+        // bulkDelete returns the Collection of deleted messages
+        if (deleted) {
+            return interaction.editReply({ content: `Successfully deleted \`${deleted.size}\` bot messages.` });
+        }
     },
 };
