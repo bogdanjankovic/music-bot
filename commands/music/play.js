@@ -259,44 +259,45 @@ async function playSong(guild, song) {
             }
         }
 
-        console.log(`Fetching stream URL for ${song.title} using yt-dlp...`);
-        try {
-            const output = await ytDlp(song.url, {
-                dumpSingleJson: true,
-                noWarnings: true,
-                noCheckCertificates: true,
-                preferFreeFormats: true,
-                youtubeSkipDashManifest: true,
-                format: 'bestaudio'
-            });
-            streamUrl = output.url;
-            console.log("Stream URL fetched successfully.");
-        } catch (err) {
-            console.error("yt-dlp error:", err);
-            serverQueue.textChannel.send(`Error fetching stream for **${song.title}**`);
-            serverQueue.songs.shift();
-            playSong(guild, serverQueue.songs[0]);
-            return;
-        }
+        console.log(`Starting stream for ${song.title} using yt-dlp -> ffmpeg pipe...`);
 
-        console.log(`Stream created for ${song.title}, spawning FFmpeg...`);
+        // Spawn yt-dlp to stream data to stdout
+        const ytDlpProcess = spawn('yt-dlp', [
+            song.url,
+            '-o', '-',
+            '-q',
+            '-f', 'bestaudio',
+            '--no-warnings',
+            '--no-check-certificates',
+            '--prefer-free-formats',
+            '--youtube-skip-dash-manifest'
+        ]);
 
-        // Manually spawn FFmpeg to have better control and visibility
-        // Use 'ffmpeg' (system binary) instead of ffmpeg-static for Cloud/Docker stability
+        ytDlpProcess.on('error', err => {
+            console.error('yt-dlp process error:', err);
+        });
+
+        // Spawn FFmpeg to read from stdin (pipe:0) and output raw PCM to stdout
         const ffmpegProcess = spawn('ffmpeg', [
             '-reconnect', '1',
             '-reconnect_streamed', '1',
             '-reconnect_delay_max', '5',
-            '-i', streamUrl,
-            '-f', 's16le',       // Output format: Signed 16-bit PCM (Little Endian)
-            '-ar', '48000',      // Sample rate: 48kHz (Discord standard)
-            '-ac', '2',          // Channels: 2 (Stereo)
-            // '-loglevel', 'warning', // REMOVED to see full logs
+            '-i', 'pipe:0',      // Read from stdin (which will be yt-dlp's stdout)
+            '-f', 's16le',       // Output: Signed 16-bit PCM (Little Endian)
+            '-ar', '48000',      // Rate: 48kHz
+            '-ac', '2',          // Channels: Stereo
             'pipe:1'             // Output to stdout
         ]);
 
+        // Pipe yt-dlp output directly into FFmpeg input
+        ytDlpProcess.stdout.pipe(ffmpegProcess.stdin);
+
         ffmpegProcess.stderr.on('data', data => {
-            console.log(`FFmpeg log: ${data.toString()}`);
+            // Filter logs to reduce spam but keep errors
+            const msg = data.toString();
+            if (msg.includes('Error') || msg.includes('headers') || msg.includes('403')) {
+                console.log(`FFmpeg Log: ${msg}`);
+            }
         });
 
         ffmpegProcess.on('close', code => {
