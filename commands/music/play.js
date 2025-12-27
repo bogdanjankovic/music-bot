@@ -1,7 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, VoiceConnectionStatus, StreamType } = require('@discordjs/voice');
 const play = require('play-dl');
-const ytDlp = require('yt-dlp-exec');
+const ytDlp = require('yt-dlp-exec'); // Keep for types or util if needed, but we spawn manually usually
+// We will spawn the binary directly.
+
 const ytSearch = require('yt-search');
 const { spawn } = require('child_process');
 const ffmpegPath = require('ffmpeg-static');
