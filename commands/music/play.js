@@ -280,7 +280,8 @@ async function playSong(guild, song) {
         console.log(`Stream created for ${song.title}, spawning FFmpeg...`);
 
         // Manually spawn FFmpeg to have better control and visibility
-        const ffmpegProcess = spawn(ffmpegPath, [
+        // Use 'ffmpeg' (system binary) instead of ffmpeg-static for Cloud/Docker stability
+        const ffmpegProcess = spawn('ffmpeg', [
             '-reconnect', '1',
             '-reconnect_streamed', '1',
             '-reconnect_delay_max', '5',
