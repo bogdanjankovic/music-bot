@@ -288,12 +288,16 @@ async function playSong(guild, song) {
             '-f', 's16le',       // Output format: Signed 16-bit PCM (Little Endian)
             '-ar', '48000',      // Sample rate: 48kHz (Discord standard)
             '-ac', '2',          // Channels: 2 (Stereo)
-            '-loglevel', 'warning', // Show warnings/errors
+            // '-loglevel', 'warning', // REMOVED to see full logs
             'pipe:1'             // Output to stdout
         ]);
 
         ffmpegProcess.stderr.on('data', data => {
             console.log(`FFmpeg log: ${data.toString()}`);
+        });
+
+        ffmpegProcess.on('close', code => {
+            console.log(`FFmpeg process exited with code ${code}`);
         });
 
         ffmpegProcess.on('error', err => {
