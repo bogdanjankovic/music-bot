@@ -292,12 +292,14 @@ async function playSong(guild, song) {
         // Pipe yt-dlp output directly into FFmpeg input
         ytDlpProcess.stdout.pipe(ffmpegProcess.stdin);
 
+        // capture yt-dlp errors/logs for debugging
+        ytDlpProcess.stderr.on('data', data => {
+            console.log(`yt-dlp log: ${data.toString()}`);
+        });
+
         ffmpegProcess.stderr.on('data', data => {
-            // Filter logs to reduce spam but keep errors
-            const msg = data.toString();
-            if (msg.includes('Error') || msg.includes('headers') || msg.includes('403')) {
-                console.log(`FFmpeg Log: ${msg}`);
-            }
+            // LOG EVERYTHING for debugging
+            console.log(`FFmpeg log: ${data.toString()}`);
         });
 
         ffmpegProcess.on('close', code => {
