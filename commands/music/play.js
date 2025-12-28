@@ -279,9 +279,6 @@ async function playSong(guild, song) {
 
         // Spawn FFmpeg to read from stdin (pipe:0) and output raw PCM to stdout
         const ffmpegProcess = spawn('ffmpeg', [
-            '-reconnect', '1',
-            '-reconnect_streamed', '1',
-            '-reconnect_delay_max', '5',
             '-i', 'pipe:0',      // Read from stdin (which will be yt-dlp's stdout)
             '-f', 's16le',       // Output: Signed 16-bit PCM (Little Endian)
             '-ar', '48000',      // Rate: 48kHz
