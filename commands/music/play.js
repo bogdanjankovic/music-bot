@@ -266,15 +266,20 @@ async function playSong(guild, song) {
             song.url,
             '-o', '-',
             '-q',
-            '-f', 'bestaudio',
-            '--no-warnings',
+            '--no-playlist',
+            '--extract-audio',
+            '--audio-format', 'opus', // Better to use opus directly if possible, but FFmpeg will handle conversion
+            '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            '--referer', 'https://www.google.com/',
+            '--cookies', 'cookies.txt',
             '--no-check-certificates',
             '--prefer-free-formats',
-            '--cookies', 'cookies.txt'
+            '--no-warnings'
         ]);
 
         ytDlpProcess.on('error', err => {
             console.error('yt-dlp process error:', err);
+            serverQueue.textChannel.send(`❌ Failed to start yt-dlp: ${err.message}`);
         });
 
         // Spawn FFmpeg to read from stdin (pipe:0) and output raw PCM to stdout
@@ -296,25 +301,36 @@ async function playSong(guild, song) {
         });
 
         ytDlpProcess.stdout.pipe(ffmpegProcess.stdin).on('error', err => {
-            console.log('Pipe error:', err);
+            console.log('Pipe error from yt-dlp to FFmpeg:', err);
         });
 
         // capture yt-dlp errors/logs for debugging
         ytDlpProcess.stderr.on('data', data => {
-            console.log(`yt-dlp log: ${data.toString()}`);
+            const log = data.toString();
+            console.log(`yt-dlp log: ${log}`);
+            if (log.includes('403: Forbidden')) {
+                serverQueue.textChannel.send('⚠️ YouTube returned a 403 Forbidden error. This usually means cookies.txt needs to be updated.');
+            }
         });
 
         ffmpegProcess.stderr.on('data', data => {
-            // LOG EVERYTHING for debugging
-            console.log(`FFmpeg log: ${data.toString()}`);
+            // FFmpeg logs to stderr by default
+            const log = data.toString();
+            // Only log errors or important info to keep console clean
+            if (log.toLowerCase().includes('error') || log.toLowerCase().includes('invalid')) {
+                console.log(`FFmpeg [ERROR/INFO]: ${log.trim()}`);
+            }
         });
 
         ffmpegProcess.on('close', code => {
-            console.log(`FFmpeg process exited with code ${code}`);
+            if (code !== 0 && code !== null) {
+                console.log(`FFmpeg process exited with code ${code}`);
+            }
         });
 
         ffmpegProcess.on('error', err => {
             console.error('FFmpeg process error:', err);
+            serverQueue.textChannel.send(`❌ FFmpeg error: ${err.message}`);
         });
 
         // Create resource from the ffmpeg stdout stream
